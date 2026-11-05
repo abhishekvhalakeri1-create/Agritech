@@ -8,6 +8,9 @@ backend/.env
 frontend/node_modules/
 frontend/dist/
 
+# Built SPA served by FastAPI (regenerate with: cd frontend && npm run build)
+backend/webapp/
+
 # Model artifacts & runtime uploads
 backend/models/**/*.pkl
 backend/models/**/*.h5

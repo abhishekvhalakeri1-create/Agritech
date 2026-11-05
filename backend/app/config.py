@@ -15,6 +15,8 @@ APP_DIR = BACKEND_DIR / "app"
 DATA_DIR = APP_DIR / "data"
 MODELS_DIR = Path(os.getenv("FIELDZY_MODELS_DIR", BACKEND_DIR / "models"))
 UPLOADS_DIR = BACKEND_DIR / "uploads"
+# Built React app (npm run build writes here). Served by FastAPI when present.
+FRONTEND_DIST = Path(os.getenv("FIELDZY_FRONTEND_DIST", BACKEND_DIR / "webapp"))
 DB_PATH = Path(os.getenv("FIELDZY_DB_PATH", BACKEND_DIR / "fieldzy.db"))
 
 load_dotenv(BACKEND_DIR / ".env")

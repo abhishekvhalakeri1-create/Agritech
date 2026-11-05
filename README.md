@@ -16,23 +16,29 @@ allowed to become a warning. The state of that uncertainty is the
 ## Quick start
 
 ```bash
-# 1. Backend
+# 1. Dependencies
 cd backend
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 cp .env.example .env                 # optional: add GEMINI_API_KEY
-.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000
+cd ../frontend && npm install
 
-# 2. Frontend (second terminal)
-cd frontend
-npm install
-npm run dev                          # http://localhost:5173
+# 2a. One server, one origin — build the app and let FastAPI serve it
+npm run build                        # writes into backend/webapp
+cd ../backend
+.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000
+#    the whole app is now at http://localhost:8000  (API at /api, docs at /docs)
+
+# 2b. Or develop the UI with hot reload
+cd ../frontend && npm run dev        # http://localhost:5173, proxies /api → :8000
 ```
 
-`npm run dev` proxies `/api/*` to `127.0.0.1:8000`, so the browser only ever
-talks to one origin. API docs live at `http://localhost:8000/docs`.
+The app always talks to its own origin: `/api/*` is proxied in dev, and in the
+single-server setup FastAPI serves `backend/webapp` (with SPA fallback for
+paths like `/acoustic`) alongside the JSON API. API docs live at `http://localhost:8000/docs`.
 
-Or run both together: `./scripts/setup.sh` (once) then `./scripts/dev.sh`.
+Or run both together for development: `./scripts/setup.sh` (once) then
+`./scripts/dev.sh`.
 
 Engine behaviour checks:
 
