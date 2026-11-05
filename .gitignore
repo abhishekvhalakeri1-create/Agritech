@@ -1,0 +1,22 @@
+# Python
+backend/.venv/
+__pycache__/
+*.pyc
+backend/.env
+
+# Node
+frontend/node_modules/
+frontend/dist/
+
+# Model artifacts & runtime uploads
+backend/models/**/*.pkl
+backend/models/**/*.h5
+backend/models/**/*.pb
+backend/models/**/saved_model.pb
+backend/models/**/variables/
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Local runtime db
+backend/fieldzy.db
+.DS_Store

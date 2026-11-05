@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "note": "Screening label set used only when the trained classifier (fieldzy_sound_model.pkl) is not installed. When the classifier is present, ITS labels are authoritative and this file is ignored.",
+  "classes": [
+    {
+      "key": "machinery_engine",
+      "label": "Machinery / engine",
+      "description": "Low, steady engine or pump noise close to the field.",
+      "threatRelevance": "moderate",
+      "threatCategory": "unauthorised machinery",
+      "recommendedAction": "Confirm whether scheduled equipment is running, then photograph or log the source."
+    },
+    {
+      "key": "animal_distress",
+      "label": "Animal distress call",
+      "description": "Repeated tonal animal vocalisation.",
+      "threatRelevance": "elevated",
+      "threatCategory": "livestock or wildlife intrusion",
+      "recommendedAction": "Check the boundary in person or with a camera before treating this as an intrusion."
+    },
+    {
+      "key": "alarm_buzzer",
+      "label": "Alarm / buzzer",
+      "description": "Sustained narrow-band electronic tone.",
+      "threatRelevance": "elevated",
+      "threatCategory": "equipment alarm",
+      "recommendedAction": "Inspect the pump house or shed for a triggered alarm."
+    },
+    {
+      "key": "insect_chorus",
+      "label": "Insect chorus",
+      "description": "Dense high-frequency insect activity.",
+      "threatRelevance": "low",
+      "threatCategory": "pest activity signal",
+      "recommendedAction": "Log as context; pest pressure needs crop scouting evidence."
+    },
+    {
+      "key": "bird_flock",
+      "label": "Bird activity",
+      "description": "Short tonal calls with many transients.",
+      "threatRelevance": "low",
+      "threatCategory": "bird activity",
+      "recommendedAction": "Note for harvest-window planning; no immediate action."
+    },
+    {
+      "key": "wind_rain",
+      "label": "Wind / rain",
+      "description": "Broadband weather noise with no clear tonal component.",
+      "threatRelevance": "none",
+      "threatCategory": "weather",
+      "recommendedAction": "No field action. Use the weather card for context."
+    },
+    {
+      "key": "human_activity",
+      "label": "Human activity",
+      "description": "Speech-like or footstep-like transients.",
+      "threatRelevance": "low",
+      "threatCategory": "human presence",
+      "recommendedAction": "Confirm against the work schedule."
+    },
+    {
+      "key": "unclassified_background",
+      "label": "Unclassified background",
+      "description": "Ambient sound without a confident category.",
+      "threatRelevance": "none",
+      "threatCategory": "background",
+      "recommendedAction": "Record again closer to the source if the sound matters."
+    },
+    {
+      "key": "no_signal",
+      "label": "No usable signal",
+      "description": "The clip is silent or almost silent.",
+      "threatRelevance": "none",
+      "threatCategory": "none",
+      "recommendedAction": "Check the microphone and record again."
+    }
+  ]
+}
