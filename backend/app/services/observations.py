@@ -111,6 +111,12 @@ def create_observation(
     if record["syncStatus"] == "synced":
         record_transmission(record, "Server acknowledged the record", "synced",
                             "Delivery confirmed by an explicit server acknowledgement.")
+
+    # Recorded debt snapshot for the trend — imported lazily to avoid a cycle
+    # (debt_history reads observations back out of the store).
+    from .debt_history import record_snapshot
+
+    record_snapshot("observation_created", record["id"])
     return record
 
 

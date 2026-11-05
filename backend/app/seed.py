@@ -116,6 +116,10 @@ def _build(
         **(context_extra or {}),
     }
     validation = validate_evidence(feature, model_result, context, evidence or {})
+    # Gaps belong to the moment the observation was captured, not to seed time —
+    # otherwise ageing and staleness would be misleading.
+    for gap in validation["evidenceGaps"]:
+        gap["createdAt"] = created
     record = {
         "id": obs_id,
         "fieldId": field["id"],
@@ -160,6 +164,21 @@ def _build(
     if review:
         result = apply_review(record, review[0], review[1], "Hemish (field review)")
         record = result["observation"] if result["allowed"] else record
+
+    # Reviews and gap resolutions in the seed data happened *after* the capture,
+    # not at seed time. Stamp them relative to the observation so ageing, replay
+    # and trend maths reflect a real sequence of events.
+    created_dt = datetime.fromisoformat(created.replace("Z", "+00:00"))
+    gap_resolved_at = (created_dt + timedelta(hours=3, minutes=20)).isoformat().replace("+00:00", "Z")
+    reviewed_at = (created_dt + timedelta(hours=5)).isoformat().replace("+00:00", "Z")
+    for gap in record["evidenceGaps"]:
+        if gap.get("resolved"):
+            gap["resolvedAt"] = gap_resolved_at
+    for entry in record["reviewHistory"]:
+        if entry.get("decision") != "created":
+            entry["at"] = reviewed_at
+    if any(entry.get("decision") != "created" for entry in record["reviewHistory"]):
+        record["updatedAt"] = reviewed_at
     return record
 
 
@@ -239,7 +258,7 @@ def _observations() -> list[dict[str, Any]]:
                 "A second report from the same time describes the sound as wind in the mango canopy."
             ),
             severity="elevated",
-            hours_ago=14,
+            hours_ago=74,
             model_result=None,
             evidence={
                 "images": [
@@ -427,3 +446,7 @@ def seed_database() -> None:
         db.insert("transmissions", tx)
     for reading in _soil_readings():
         db.insert("soilReadings", reading)
+
+    from .services.debt_history import record_snapshot
+
+    record_snapshot("seed", None, force=True)

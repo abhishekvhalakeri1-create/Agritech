@@ -338,7 +338,13 @@ export default function Observations() {
               <tbody>
                 {filtered.map((observation) => {
                   const sync = syncMeta(observation.syncStatus)
-                  const openGaps = observation.evidenceGaps.filter((gap) => !gap.resolved).length
+                  const openGapRows = observation.evidenceGaps.filter((gap) => !gap.resolved)
+                  const openGaps = openGapRows.length
+                  const oldest = openGapRows.reduce((max, gap) => {
+                    const hours = gap.createdAt ? (Date.now() - new Date(gap.createdAt).getTime()) / 3_600_000 : 0
+                    return Math.max(max, hours)
+                  }, 0)
+                  const stale = oldest >= 48
                   return (
                     <tr key={observation.id} onClick={() => setOpenId(observation.id)} style={{ cursor: 'pointer' }}>
                       <td style={{ maxWidth: 320 }}>
@@ -355,9 +361,12 @@ export default function Observations() {
                       </td>
                       <td>
                         {openGaps ? (
-                          <Pill tone="amber" className="small">
-                            {openGaps} open
-                          </Pill>
+                          <span className="row tight">
+                            <Pill tone={stale ? 'orange' : 'amber'} className="small">
+                              {openGaps} open
+                            </Pill>
+                            <span className="tiny muted nowrap">{Math.round(oldest)}h</span>
+                          </span>
                         ) : (
                           <span className="muted small">—</span>
                         )}

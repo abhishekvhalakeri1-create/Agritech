@@ -100,6 +100,49 @@ export interface Field {
   openWarningCount: number
 }
 
+export interface DebtGap {
+  gapId: string
+  code: string
+  description: string
+  detail?: string
+  severity: 'high' | 'medium' | 'low'
+  resolved: boolean
+  resolvedAt?: string | null
+  resolvedBy?: string | null
+  resolutionNote?: string
+  createdAt: string
+  ageHours: number | null
+  ageBucket: string
+  ageDays: number | null
+  stale: boolean
+  resolutionHours: number | null
+  observationId: string
+  observationTitle: string
+  observationStatus?: string | null
+  observationFeature?: string
+  feature: string
+  fieldId: string | null
+  fieldName: string
+}
+
+export interface DebtAgeing {
+  oldestGapHours: number
+  oldestGapDays: number
+  staleThresholdHours: number
+  buckets: Record<string, number>
+  averageResolutionHours: number | null
+  resolvedSampleSize: number
+}
+
+export interface DebtFieldBucket {
+  fieldId: string | null
+  fieldName: string
+  observations: number
+  unresolvedObservations: number
+  unresolvedGaps: number
+  debt: number
+}
+
 export interface DebtTerm {
   id: string
   observationId: string
@@ -126,25 +169,65 @@ export interface Debt {
     capped: boolean
   }
   counts: Record<string, number>
-  unresolvedGapList: Array<{
-    gapId: string
-    code: string
-    description: string
-    severity: string
-    observationId: string
-    observationTitle: string
-    fieldId: string
-    fieldName: string
-    feature: string
-    createdAt: string
-  }>
+  unresolvedGapList: DebtGap[]
+  recentlyResolved: DebtGap[]
+  ageing: DebtAgeing
+  byField: DebtFieldBucket[]
+  forecast: Array<{ resolved: number; score: number }>
   byFeature: Array<{ feature: string; label: string; observations: number; unresolvedGaps: number; debt: number }>
-  byGapCode: Array<{ code: string; description: string; count: number }>
+  byGapCode: Array<{ code: string; description: string; count: number; stale?: number }>
   observations: DebtTerm[]
   explanation: string
-  recommendedActions: Array<{ label: string; detail: string; observationId: string; gapId: string }>
+  recommendedActions: Array<{
+    label: string
+    detail: string
+    observationId: string
+    gapId: string
+    impact?: number
+    severity?: string
+  }>
   computedAt: string
   engineVersion: string
+}
+
+export interface DebtHistoryPoint {
+  at: string
+  score: number
+  unresolvedGaps: number
+  unresolvedObservations: number
+  source: 'recorded' | 'reconstructed' | 'live'
+}
+
+export interface DebtHistory {
+  current: number
+  series: DebtHistoryPoint[]
+  recorded: DebtHistoryPoint[]
+  reconstructed: DebtHistoryPoint[]
+  delta24h: number
+  min: number
+  max: number
+  points: number
+  explanation: string
+  computedAt: string
+}
+
+export interface DebtLedger {
+  gaps: DebtGap[]
+  count: number
+  filters: { status: string; severity: string | null; fieldId: string | null; feature: string | null }
+  debt: number
+  staleCount: number
+}
+
+export interface DebtProjection {
+  current: number
+  projected: number
+  delta: number
+  requestedGapIds: string[]
+  selectedGaps: string[]
+  alreadyResolvedOrUnknown: string[]
+  components: Debt['components']
+  note: string
 }
 
 export interface Threat {

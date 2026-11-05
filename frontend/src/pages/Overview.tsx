@@ -172,7 +172,7 @@ export default function Overview() {
 
       <div className="split section">
         {debt ? (
-          <EvidenceDebtMeter debt={debt} onOpenObservation={(id) => setOpenId(id)} />
+          <EvidenceDebtMeter debt={debt} trend onOpenObservation={(id) => setOpenId(id)} />
         ) : (
           <Card>
             <LoadingBlock lines={4} />

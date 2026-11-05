@@ -57,11 +57,12 @@ resolutions, reviews, transmissions — is created by real use.
 
 | Area | Status | Honest detail |
 | --- | --- | --- |
-| Evidence Debt Meter | Working | `min(100, gaps×15 + unresolved×10)`, computed from observation rows |
+| Evidence Debt Meter | Working | `min(100, gaps×15 + unresolved×10)`, computed from observation rows; trend, ageing and forecast attached |
+| Evidence ledger (`/evidence`) | Working | Every gap ever raised: age, stale flag, field, resolution note, CSV export, what-if projection |
 | Evidence validation engine | Working | Deterministic rules, shared by every module, never self-verifies |
 | Observation management | Working | Gaps resolved individually, review history, blocked verification |
 | Plant disease detection | Working | TensorFlow `serving_default` when installed; otherwise labelled screening rules |
-| Acoustic intelligence | Working | YAMNet embeddings + `fieldzy_sound_model.pkl` when installed; otherwise labelled DSP screening |
+| Acoustic intelligence | Working | YAMNet embeddings + `fieldzy_sound_model.pkl` when installed; otherwise labelled DSP screening; spectral band fingerprint and tonality/modulation/transient metrics |
 | Soil moisture | Working (simulated readings) | No physical sensor is attached — every value says so |
 | Threat visualizer | Working | Driven by real observation records, slate-green → amber → orange → red |
 | AI field-health summary | Working | Gemini through the backend when a key exists, else a labelled local summary |
@@ -132,7 +133,11 @@ backend/ (FastAPI)
 | POST | `/api/observations/{id}/evidence-gaps/{gapId}/resolve` | Resolve / re-open a gap |
 | POST | `/api/observations/{id}/review` | Human verification decision |
 | POST | `/api/validate-evidence` | Run the engine without saving |
-| GET | `/api/evidence-debt` | Full meter payload |
+| GET | `/api/evidence-debt` | Full meter payload (score, ageing, by field/feature, forecast) |
+| GET | `/api/evidence-debt/history` | Recorded snapshots + replayed debt trend |
+| GET | `/api/evidence-debt/ledger` | Flat evidence-gap ledger (`status`, `severity`, `fieldId`, `feature`) |
+| GET | `/api/evidence-debt/ledger.csv` | CSV export of the ledger |
+| POST | `/api/evidence-debt/project` | Read-only projection for selected gaps |
 | GET | `/api/threats` | Threat visualizer records |
 | POST | `/api/predict-plant` | Leaf photograph → engine result |
 | POST | `/api/plant-analyses/{id}/observation` | Promote an analysis into the workflow |

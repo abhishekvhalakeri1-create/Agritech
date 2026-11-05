@@ -23,3 +23,6 @@ backend/uploads/*
 # Local runtime db
 backend/fieldzy.db
 .DS_Store
+
+# TypeScript incremental build cache
+*.tsbuildinfo

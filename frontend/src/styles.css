@@ -969,6 +969,8 @@ table.data td strong { color: var(--ink); font-weight: 600; }
 .gap-chip.high { border-left-color: var(--red); }
 .gap-chip.low { border-left-color: var(--slate-green); }
 .gap-chip.resolved { border-left-color: var(--sage); background: var(--sage-mist); opacity: 0.92; }
+.gap-chip.stale { border-left-color: var(--red); background: rgba(246, 222, 217, 0.32); }
+.gap-chip.stale .gap-title { color: #7f271d; }
 .gap-chip .gap-title { font-size: 0.92rem; color: var(--ink); font-weight: 600; }
 .gap-chip .gap-detail { font-size: 0.82rem; color: var(--ink-muted); margin-top: 2px; }
 .gap-chip .gap-actions { margin-left: auto; display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
@@ -1281,4 +1283,46 @@ table.data td strong { color: var(--ink); font-weight: 600; }
   flex-wrap: wrap;
   font-size: 0.8rem;
   color: var(--ink-muted);
+}
+
+/* ------------------------------------------------------- acoustic bands */
+.band-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  align-items: end;
+  height: 104px;
+  margin-top: 10px;
+  padding: 8px 10px 0;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  background: linear-gradient(180deg, rgba(245, 240, 227, 0.4), rgba(255, 253, 249, 0.9));
+}
+.band { display: flex; flex-direction: column; align-items: center; height: 100%; }
+.band-bar-shell {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  background: rgba(223, 231, 217, 0.35);
+  border-radius: 5px;
+  overflow: hidden;
+}
+.band-bar {
+  width: 100%;
+  border-radius: 5px 5px 0 0;
+  background: linear-gradient(180deg, var(--sunrise), var(--forest-soft));
+  transition: height 480ms var(--ease);
+}
+.band-label { font-size: 0.62rem; color: var(--ink-muted); margin-top: 5px; text-align: center; white-space: nowrap; }
+.band-value { font-size: 0.68rem; color: var(--ink-soft); margin-bottom: 6px; font-variant-numeric: tabular-nums; }
+
+.dsp-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+@media (max-width: 720px) {
+  .dsp-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

@@ -14,9 +14,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app.evidence_engine import (  # noqa: E402
+    collect_gaps,
     apply_review,
     evidence_debt,
+    project_debt,
     resolve_gap,
+    score_from_counts,
     validate_evidence,
 )
 
@@ -120,6 +123,62 @@ def test_conflict_outranks_other_states() -> None:
     )
     assert result["status"] == "conflicting"
     assert any(gap["code"] == "CONFLICTING_REPORTS_REQUIRE_REVIEW" for gap in result["evidenceGaps"])
+
+
+def test_score_from_counts_matches_the_formula() -> None:
+    assert score_from_counts(0, 0)["score"] == 0
+    assert score_from_counts(3, 3)["score"] == 75
+    assert score_from_counts(3, 3)["gapTerm"] == 45
+    assert score_from_counts(3, 3)["observationTerm"] == 30
+    capped = score_from_counts(9, 6)
+    assert capped["score"] == 100 and capped["capped"] is True and capped["rawScore"] == 195
+
+
+def test_projection_is_side_effect_free() -> None:
+    gaps = [
+        {"id": "g1", "code": "TIME_INFORMATION_MISSING", "description": "time", "severity": "medium", "resolved": False},
+        {"id": "g2", "code": "LOCATION_CONFIRMATION_MISSING", "description": "place", "severity": "high", "resolved": False},
+    ]
+    observation = {
+        "id": "O1",
+        "feature": "manual_observation",
+        "status": "needs_review",
+        "evidenceGaps": gaps,
+        "reviewHistory": [],
+        "createdAt": "2026-11-04T08:00:00Z",
+    }
+    before = evidence_debt([observation])
+    projection = project_debt([observation], ["g1"])
+    after = evidence_debt([observation])
+    assert projection["current"] == before["score"] == 40
+    assert projection["projected"] == 25
+    assert projection["delta"] == -15
+    assert after == before, "projecting must not mutate or resolve anything"
+    assert project_debt([observation], ["missing-gap"])["alreadyResolvedOrUnknown"] == ["missing-gap"]
+
+
+def test_collect_gaps_flags_stale_and_age_buckets() -> None:
+    old = {"id": "g1", "code": "TIME_INFORMATION_MISSING", "description": "old", "severity": "high",
+           "resolved": False, "createdAt": "2026-10-01T00:00:00Z"}
+    observation = {"id": "O1", "feature": "manual_observation", "status": "unverified",
+                   "evidenceGaps": [old], "createdAt": "2026-10-01T00:00:00Z", "fieldName": "North"}
+    gaps = collect_gaps([observation])
+    assert gaps[0]["stale"] is True
+    assert gaps[0]["ageBucket"] == "over_7_days"
+    assert gaps[0]["ageDays"] >= 7
+
+
+def test_ageing_buckets_and_counts_are_exposed() -> None:
+    gap = {"id": "g1", "code": "TIME_INFORMATION_MISSING", "description": "x", "severity": "medium",
+           "resolved": False, "createdAt": "2026-10-01T00:00:00Z"}
+    observation = {"id": "O1", "feature": "manual_observation", "status": "needs_review",
+                   "evidenceGaps": [gap], "createdAt": "2026-10-01T00:00:00Z"}
+    debt = evidence_debt([observation])
+    assert debt["ageing"]["buckets"]["over_7_days"] == 1
+    assert debt["ageing"]["oldestGapHours"] > 48
+    assert debt["counts"]["gapsStale"] == 1
+    assert debt["byField"][0]["debt"] == 25
+    assert debt["forecast"][1]["score"] == 10
 
 
 if __name__ == "__main__":

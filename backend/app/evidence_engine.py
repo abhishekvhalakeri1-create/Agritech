@@ -532,6 +532,29 @@ def recompute_status(observation: dict[str, Any]) -> str:
 # Evidence Debt Meter
 # ---------------------------------------------------------------------------
 
+def score_from_counts(unresolved_gaps: int, unresolved_observations: int) -> dict[str, Any]:
+    """The single implementation of the Evidence Debt formula.
+
+    ``min(100, gaps * 15 + unresolved_observations * 10)`` — used by the live
+    meter, the recorded snapshots and the historical replay, so all three can
+    never disagree.
+    """
+    gap_term = max(0, int(unresolved_gaps)) * GAP_DEBT_WEIGHT
+    observation_term = max(0, int(unresolved_observations)) * OBSERVATION_DEBT_WEIGHT
+    raw = gap_term + observation_term
+    return {
+        "unresolvedGaps": max(0, int(unresolved_gaps)),
+        "gapWeight": GAP_DEBT_WEIGHT,
+        "gapTerm": gap_term,
+        "unresolvedObservations": max(0, int(unresolved_observations)),
+        "observationWeight": OBSERVATION_DEBT_WEIGHT,
+        "observationTerm": observation_term,
+        "rawScore": raw,
+        "score": min(DEBT_CAP, raw),
+        "capped": raw > DEBT_CAP,
+    }
+
+
 def _score_band(score: int) -> dict[str, str]:
     if score == 0:
         return {"key": "clear", "label": "Clear", "tone": "sage"}
@@ -542,6 +565,96 @@ def _score_band(score: int) -> dict[str, str]:
     if score <= 75:
         return {"key": "high", "label": "High debt", "tone": "orange"}
     return {"key": "critical", "label": "Critical debt", "tone": "red"}
+
+
+STALE_GAP_HOURS = 48
+
+
+def _age_hours(created_at: Any, *, until: datetime | None = None) -> float | None:
+    parsed = parse_timestamp(created_at)
+    if parsed is None:
+        return None
+    now = until or datetime.now(timezone.utc)
+    return round(max(0.0, (now - parsed).total_seconds() / 3600.0), 2)
+
+
+def _age_bucket(hours: float | None) -> str:
+    if hours is None:
+        return "unknown"
+    if hours < 12:
+        return "under_12h"
+    if hours < 48:
+        return "12h_to_48h"
+    if hours < 168:
+        return "2_to_7_days"
+    return "over_7_days"
+
+
+def collect_gaps(observations: Iterable[dict[str, Any]], *, include_resolved: bool = False) -> list[dict[str, Any]]:
+    """Flatten every evidence gap with its observation, field and age."""
+    gaps: list[dict[str, Any]] = []
+    for obs in observations or []:
+        feature = obs.get("feature") or obs.get("category") or "manual_observation"
+        for gap in obs.get("evidenceGaps") or []:
+            if gap.get("resolved") and not include_resolved:
+                continue
+            age = _age_hours(gap.get("createdAt") or obs.get("createdAt"))
+            resolved_age = _age_hours(gap.get("createdAt"), until=parse_timestamp(gap.get("resolvedAt"))) \
+                if gap.get("resolved") and gap.get("resolvedAt") else None
+            gaps.append(
+                {
+                    "gapId": gap.get("id"),
+                    "code": gap.get("code"),
+                    "description": gap.get("description"),
+                    "detail": gap.get("detail"),
+                    "severity": gap.get("severity", "medium"),
+                    "resolved": bool(gap.get("resolved")),
+                    "resolvedAt": gap.get("resolvedAt"),
+                    "resolvedBy": gap.get("resolvedBy"),
+                    "resolutionNote": gap.get("resolutionNote"),
+                    "createdAt": gap.get("createdAt") or obs.get("createdAt"),
+                    "ageHours": age,
+                    "ageBucket": _age_bucket(age),
+                    "ageDays": round(age / 24.0, 1) if age is not None else None,
+                    "stale": bool(age is not None and age >= STALE_GAP_HOURS and not gap.get("resolved")),
+                    "resolutionHours": resolved_age,
+                    "observationId": obs.get("id"),
+                    "observationTitle": obs.get("title"),
+                    "observationStatus": obs.get("status"),
+                    "observationFeature": feature,
+                    "feature": feature,
+                    "fieldId": obs.get("fieldId"),
+                    "fieldName": obs.get("fieldName") or "Unassigned",
+                }
+            )
+    return gaps
+
+
+def project_debt(observations: Iterable[dict[str, Any]], gap_ids: Iterable[str]) -> dict[str, Any]:
+    """What the score becomes if specific gaps were resolved (no side effects)."""
+    observations = list(observations or [])
+    current = evidence_debt(observations)
+    target = set(gap_ids or [])
+    known = {gap["gapId"] for gap in collect_gaps(observations)}
+    selected = target & known
+    unknown = sorted(target - known)
+    counts = score_from_counts(
+        current["components"]["unresolvedGaps"] - len(selected),
+        current["components"]["unresolvedObservations"],
+    )
+    return {
+        "current": current["score"],
+        "projected": counts["score"],
+        "delta": counts["score"] - current["score"],
+        "requestedGapIds": sorted(target),
+        "selectedGaps": sorted(selected),
+        "alreadyResolvedOrUnknown": unknown,
+        "components": counts,
+        "note": (
+            "Projection only — nothing is written. The second term clears only when a human review "
+            "moves an observation out of the unresolved bucket."
+        ),
+    }
 
 
 def evidence_debt(observations: Iterable[dict[str, Any]]) -> dict[str, Any]:
@@ -557,78 +670,98 @@ def evidence_debt(observations: Iterable[dict[str, Any]]) -> dict[str, Any]:
     observation *and* once per gap bucket.
     """
     observations = list(observations or [])
-    unresolved_gaps: list[dict[str, Any]] = []
-    unresolved_observations: list[dict[str, Any]] = []
-    verified = 0
-    resolved = 0
+    all_gaps = collect_gaps(observations, include_resolved=True)
+    unresolved_gaps = [gap for gap in all_gaps if not gap["resolved"]]
+    unresolved_observations = [o for o in observations if o.get("status") in UNRESOLVED_STATUSES]
+    verified = sum(1 for o in observations if o.get("status") == STATUS_VERIFIED)
+    resolved = sum(1 for o in observations if o.get("status") == STATUS_RESOLVED)
 
-    by_feature: dict[str, dict[str, Any]] = {}
-    by_gap_code: dict[str, dict[str, Any]] = {}
-
-    for obs in observations:
-        feature = obs.get("feature") or obs.get("category") or "manual_observation"
-        bucket = by_feature.setdefault(
-            feature,
-            {"feature": feature, "label": FEATURE_LABELS.get(feature, feature.replace("_", " ").title()),
-             "observations": 0, "unresolvedGaps": 0, "debt": 0},
-        )
-        bucket["observations"] += 1
-
-        status = obs.get("status")
-        if status in UNRESOLVED_STATUSES:
-            unresolved_observations.append(obs)
-        elif status == STATUS_VERIFIED:
-            verified += 1
-        elif status == STATUS_RESOLVED:
-            resolved += 1
-
-        for gap in obs.get("evidenceGaps") or []:
-            if gap.get("resolved"):
-                continue
-            enriched = {
-                "gapId": gap.get("id"),
-                "code": gap.get("code"),
-                "description": gap.get("description"),
-                "severity": gap.get("severity", "medium"),
-                "observationId": obs.get("id"),
-                "observationTitle": obs.get("title"),
-                "fieldId": obs.get("fieldId"),
-                "fieldName": obs.get("fieldName"),
-                "feature": feature,
-                "createdAt": gap.get("createdAt") or obs.get("createdAt"),
-            }
-            unresolved_gaps.append(enriched)
-            bucket["unresolvedGaps"] += 1
-            code_bucket = by_gap_code.setdefault(
-                gap.get("code") or "UNKNOWN",
-                {"code": gap.get("code"), "description": gap.get("description"), "count": 0},
-            )
-            code_bucket["count"] += 1
-
-    gap_term = len(unresolved_gaps) * GAP_DEBT_WEIGHT
-    observation_term = len(unresolved_observations) * OBSERVATION_DEBT_WEIGHT
-    raw = gap_term + observation_term
-    score = min(DEBT_CAP, raw)
-
-    for bucket in by_feature.values():
-        bucket["debt"] = min(DEBT_CAP, bucket["unresolvedGaps"] * GAP_DEBT_WEIGHT + sum(
-            1 for o in unresolved_observations if (o.get("feature") or o.get("category")) == bucket["feature"]
-        ) * OBSERVATION_DEBT_WEIGHT)
-
-    top_gaps = sorted(unresolved_gaps, key=lambda g: {"high": 0, "medium": 1, "low": 2}.get(g["severity"], 1))
+    counts = score_from_counts(len(unresolved_gaps), len(unresolved_observations))
+    score = counts["score"]
     band = _score_band(score)
 
-    actions: list[dict[str, str]] = []
-    for gap in top_gaps[:4]:
+    by_feature: dict[str, dict[str, Any]] = {}
+    by_field: dict[str, dict[str, Any]] = {}
+    by_gap_code: dict[str, dict[str, Any]] = {}
+    for obs in observations:
+        feature = obs.get("feature") or obs.get("category") or "manual_observation"
+        field_key = obs.get("fieldId") or "unassigned"
+        feature_bucket = by_feature.setdefault(
+            feature,
+            {
+                "feature": feature,
+                "label": FEATURE_LABELS.get(feature, feature.replace("_", " ").title()),
+                "observations": 0,
+                "unresolvedObservations": 0,
+                "unresolvedGaps": 0,
+                "debt": 0,
+            },
+        )
+        field_bucket = by_field.setdefault(
+            field_key,
+            {
+                "fieldId": obs.get("fieldId"),
+                "fieldName": obs.get("fieldName") or "Unassigned",
+                "observations": 0,
+                "unresolvedObservations": 0,
+                "unresolvedGaps": 0,
+                "debt": 0,
+            },
+        )
+        for bucket in (feature_bucket, field_bucket):
+            bucket["observations"] += 1
+            if obs.get("status") in UNRESOLVED_STATUSES:
+                bucket["unresolvedObservations"] += 1
+
+    for gap in unresolved_gaps:
+        feature = gap.get("feature") or "manual_observation"
+        field_key = gap.get("fieldId") or "unassigned"
+        if feature in by_feature:
+            by_feature[feature]["unresolvedGaps"] += 1
+        if field_key in by_field:
+            by_field[field_key]["unresolvedGaps"] += 1
+        code_bucket = by_gap_code.setdefault(
+            gap.get("code") or "UNKNOWN",
+            {"code": gap.get("code"), "description": gap.get("description"), "count": 0, "stale": 0},
+        )
+        code_bucket["count"] += 1
+        if gap["stale"]:
+            code_bucket["stale"] += 1
+
+    for bucket in list(by_feature.values()) + list(by_field.values()):
+        bucket["debt"] = score_from_counts(bucket["unresolvedGaps"], bucket["unresolvedObservations"])["score"]
+
+    stale_gaps = [gap for gap in unresolved_gaps if gap["stale"]]
+    age_buckets = {key: 0 for key in ("under_12h", "12h_to_48h", "2_to_7_days", "over_7_days", "unknown")}
+    for gap in unresolved_gaps:
+        age_buckets[gap["ageBucket"]] = age_buckets.get(gap["ageBucket"], 0) + 1
+
+    resolution_times = [gap["resolutionHours"] for gap in all_gaps if gap.get("resolutionHours") is not None]
+    oldest = max((gap["ageHours"] or 0) for gap in unresolved_gaps) if unresolved_gaps else 0.0
+
+    severity_rank = {"high": 0, "medium": 1, "low": 2}
+    ordered_gaps = sorted(
+        unresolved_gaps,
+        key=lambda gap: (
+            severity_rank.get(gap["severity"], 1),
+            -(gap["ageHours"] or 0),
+        ),
+    )
+
+    actions: list[dict[str, Any]] = []
+    for gap in ordered_gaps[:5]:
         actions.append(
             {
-                "label": f"Resolve “{gap['description']}”",
-                "detail": f"{gap['observationTitle']} · {gap['fieldName']}",
+                "label": f"Resolve \u201c{gap['description']}\u201d",
+                "detail": f"{gap['observationTitle']} \u00b7 {gap['fieldName']} \u00b7 open "
+                f"{gap['ageDays']}d",
                 "observationId": gap["observationId"],
                 "gapId": gap["gapId"],
+                "impact": GAP_DEBT_WEIGHT if score > 0 else 0,
+                "severity": gap["severity"],
             }
         )
-    if len(unresolved_observations) > len(top_gaps):
+    if len(unresolved_observations) > len(actions):
         first = unresolved_observations[0]
         actions.append(
             {
@@ -636,13 +769,31 @@ def evidence_debt(observations: Iterable[dict[str, Any]]) -> dict[str, Any]:
                 "detail": f"{len(unresolved_observations)} observations are awaiting evidence or review",
                 "observationId": first.get("id"),
                 "gapId": "",
+                "impact": 0,
+                "severity": "medium",
             }
         )
+
+    forecast = [
+        {
+            "resolved": step,
+            "score": score_from_counts(
+                max(0, len(unresolved_gaps) - step), len(unresolved_observations)
+            )["score"],
+        }
+        for step in range(0, min(6, len(unresolved_gaps)) + 1)
+    ]
 
     if score == 0:
         explanation = (
             "No unresolved evidence. Every active field report has complete supporting evidence and a "
             "recorded review decision."
+        )
+    elif stale_gaps:
+        explanation = (
+            f"{len(stale_gaps)} of {len(unresolved_gaps)} open evidence gaps have been waiting more than "
+            f"48 hours. Stale gaps are what turn a cautious system into a slow one \u2014 review the missing "
+            "supporting information before treating these warnings as confirmed."
         )
     else:
         explanation = (
@@ -653,17 +804,8 @@ def evidence_debt(observations: Iterable[dict[str, Any]]) -> dict[str, Any]:
     return {
         "score": score,
         "band": band,
-        "formula": "min(100, unresolved_gaps × 15 + unresolved_observations × 10)",
-        "components": {
-            "unresolvedGaps": len(unresolved_gaps),
-            "gapWeight": GAP_DEBT_WEIGHT,
-            "gapTerm": gap_term,
-            "unresolvedObservations": len(unresolved_observations),
-            "observationWeight": OBSERVATION_DEBT_WEIGHT,
-            "observationTerm": observation_term,
-            "rawScore": raw,
-            "capped": raw > DEBT_CAP,
-        },
+        "formula": "min(100, unresolved_gaps \u00d7 15 + unresolved_observations \u00d7 10)",
+        "components": counts,
         "counts": {
             "totalObservations": len(observations),
             "verified": verified,
@@ -672,23 +814,41 @@ def evidence_debt(observations: Iterable[dict[str, Any]]) -> dict[str, Any]:
             "needsReview": sum(1 for o in unresolved_observations if o.get("status") == STATUS_NEEDS_REVIEW),
             "conflicting": sum(1 for o in unresolved_observations if o.get("status") == STATUS_CONFLICTING),
             "inconclusive": sum(1 for o in unresolved_observations if o.get("status") == STATUS_INCONCLUSIVE),
+            "gapsTotal": len(all_gaps),
+            "gapsResolved": len(all_gaps) - len(unresolved_gaps),
+            "gapsStale": len(stale_gaps),
         },
-        "unresolvedGapList": top_gaps,
+        "ageing": {
+            "oldestGapHours": oldest,
+            "oldestGapDays": round(oldest / 24.0, 1),
+            "staleThresholdHours": STALE_GAP_HOURS,
+            "buckets": age_buckets,
+            "averageResolutionHours": round(sum(resolution_times) / len(resolution_times), 1) if resolution_times else None,
+            "resolvedSampleSize": len(resolution_times),
+        },
+        "unresolvedGapList": ordered_gaps,
+        "recentlyResolved": sorted(
+            [gap for gap in all_gaps if gap["resolved"] and gap.get("resolvedAt")],
+            key=lambda gap: gap.get("resolvedAt") or "",
+            reverse=True,
+        )[:6],
         "byFeature": sorted(by_feature.values(), key=lambda b: b["debt"], reverse=True),
+        "byField": sorted(by_field.values(), key=lambda b: b["debt"], reverse=True),
         "byGapCode": sorted(by_gap_code.values(), key=lambda b: b["count"], reverse=True),
+        "forecast": forecast,
         "observations": [
             {
                 "id": o.get("id"),
                 "title": o.get("title"),
+                "fieldId": o.get("fieldId"),
                 "fieldName": o.get("fieldName"),
                 "feature": o.get("feature"),
                 "status": o.get("status"),
                 "unresolvedGaps": sum(1 for g in (o.get("evidenceGaps") or []) if not g.get("resolved")),
-                "contribution": min(
-                    DEBT_CAP,
-                    sum(1 for g in (o.get("evidenceGaps") or []) if not g.get("resolved")) * GAP_DEBT_WEIGHT
-                    + (OBSERVATION_DEBT_WEIGHT if o.get("status") in UNRESOLVED_STATUSES else 0),
-                ),
+                "contribution": score_from_counts(
+                    sum(1 for g in (o.get("evidenceGaps") or []) if not g.get("resolved")),
+                    1 if o.get("status") in UNRESOLVED_STATUSES else 0,
+                )["score"],
             }
             for o in sorted(
                 observations,

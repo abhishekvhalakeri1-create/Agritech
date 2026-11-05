@@ -116,6 +116,18 @@ CREATE TABLE IF NOT EXISTS plantAnalyses (
     createdAt TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS debtSnapshots (
+    id TEXT PRIMARY KEY,
+    score INTEGER NOT NULL,
+    gapTerm INTEGER NOT NULL,
+    observationTerm INTEGER NOT NULL,
+    unresolvedGaps INTEGER NOT NULL,
+    unresolvedObservations INTEGER NOT NULL,
+    trigger TEXT NOT NULL DEFAULT '',
+    observationId TEXT,
+    createdAt TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS soilReadings (
     id TEXT PRIMARY KEY,
     fieldId TEXT,

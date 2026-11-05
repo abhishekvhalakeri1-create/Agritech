@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query, Response
 from pydantic import BaseModel, Field
 
 from .. import db
@@ -14,10 +14,14 @@ from ..evidence_engine import (
     UNRESOLVED_STATUSES,
     apply_review,
     evidence_debt,
+    project_debt,
     resolve_gap,
     validate_evidence,
 )
 from ..services import audio_model, plant_model
+from ..services.debt_history import history as debt_history
+from ..services.debt_history import ledger as debt_ledger
+from ..services.debt_history import ledger_csv, record_snapshot
 from ..services.observations import (
     create_observation,
     field_summary_counts,
@@ -247,6 +251,7 @@ def delete_observation(observation_id: str) -> None:
     )
     if observation.get("fieldId"):
         recompute_field_activity(observation["fieldId"])
+    record_snapshot("observation_deleted", observation_id)
 
 
 @router.post("/observations/{observation_id}/evidence-gaps/{gap_id}/resolve")
@@ -277,6 +282,7 @@ def resolve_evidence_gap(observation_id: str, gap_id: str, payload: GapResolutio
     )
     if saved.get("fieldId"):
         recompute_field_activity(saved["fieldId"])
+    record_snapshot("gap_resolved" if payload.resolved else "gap_reopened", observation_id)
     return {"observation": saved, "debt": evidence_debt(db.fetch_all("observations"))}
 
 
@@ -300,6 +306,7 @@ def review_observation(observation_id: str, payload: ReviewRequest) -> dict[str,
     record_transmission(saved, f"Review decision recorded: {payload.decision}", "synced", payload.note or "Human review recorded.")
     if saved.get("fieldId"):
         recompute_field_activity(saved["fieldId"])
+    record_snapshot("gap_resolved" if payload.resolved else "gap_reopened", observation_id)
     return {"observation": saved, "debt": evidence_debt(db.fetch_all("observations"))}
 
 
@@ -326,6 +333,50 @@ def get_evidence_debt() -> dict[str, Any]:
         for f in db.fetch_all("fields", order="name ASC")
     ]
     return debt
+
+
+class ProjectionRequest(BaseModel):
+    gapIds: list[str] = []
+
+
+@router.get("/evidence-debt/history")
+def get_debt_history(limit: int = Query(80, ge=2, le=400)) -> dict[str, Any]:
+    """Recorded snapshots plus a replay reconstructed from on-record timestamps."""
+    return debt_history(limit=limit)
+
+
+@router.get("/evidence-debt/ledger")
+def get_debt_ledger(
+    status: str = Query("open", pattern="^(open|resolved|all)$"),
+    severity: str | None = Query(None, pattern="^(high|medium|low)$"),
+    fieldId: str | None = None,
+    feature: str | None = None,
+    limit: int = Query(200, ge=1, le=1000),
+) -> dict[str, Any]:
+    return debt_ledger(status=status, severity=severity, field_id=fieldId, feature=feature, limit=limit)
+
+
+@router.get("/evidence-debt/ledger.csv")
+def download_debt_ledger(
+    status: str = Query("all", pattern="^(open|resolved|all)$"),
+) -> Response:
+    rows = debt_ledger(status=status, limit=1000)["gaps"]
+    body = ledger_csv(rows)
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M")
+    return Response(
+        content=body,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": f'attachment; filename="fieldzy-evidence-ledger-{stamp}.csv"',
+            "Cache-Control": "no-store",
+        },
+    )
+
+
+@router.post("/evidence-debt/project")
+def project_evidence_debt(payload: ProjectionRequest) -> dict[str, Any]:
+    """What the score becomes if the selected gaps were resolved. Writes nothing."""
+    return project_debt(db.fetch_all("observations"), payload.gapIds)
 
 
 # --------------------------------------------------------------------- threats

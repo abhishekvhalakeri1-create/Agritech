@@ -345,6 +345,18 @@ export default function Acoustic() {
   const trained = Boolean(audioStatus?.trainedModelInstalled)
   const analyses = history.data?.analyses ?? []
 
+  const dsp = ((result?.features ?? {}) as Record<string, any>)
+  const rawBands = (dsp.bands ?? {}) as Record<string, number>
+  const bands = Object.keys(rawBands).length
+    ? [
+        { key: 'low', label: '20–250 Hz', share: rawBands.low ?? 0 },
+        { key: 'lowMid', label: '250–800', share: rawBands.lowMid ?? 0 },
+        { key: 'mid', label: '0.8–2 kHz', share: rawBands.mid ?? 0 },
+        { key: 'high', label: '2–6 kHz', share: rawBands.high ?? 0 },
+        { key: 'veryHigh', label: '6–8 kHz', share: rawBands.veryHigh ?? 0 },
+      ]
+    : []
+
   return (
     <div className="page">
       <header className="page-head">
@@ -522,6 +534,49 @@ export default function Acoustic() {
               <p className="tiny muted" style={{ marginTop: 8 }}>{result.claritySummary}</p>
 
               <ConfidenceBars topK={result.topK} />
+
+              {bands.length ? (
+                <div style={{ marginTop: 16 }}>
+                  <div className="row between small">
+                    <strong style={{ fontSize: '.9rem' }}>Spectral fingerprint</strong>
+                    <span className="tiny muted">share of energy per band</span>
+                  </div>
+                  <div className="band-grid">
+                    {bands.map((band) => (
+                      <div className="band" key={band.key}>
+                        <div className="band-bar-shell">
+                          <div className="band-bar" style={{ height: `${Math.max(3, band.share * 100)}%` }} />
+                        </div>
+                        <div className="band-label">{band.label}</div>
+                        <div className="band-value">{Math.round(band.share * 100)}%</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="dsp-grid">
+                    <div className="rec-metric">
+                      <div className="k">Tonality</div>
+                      <div className="v">{Math.round((dsp.tonality ?? 0) * 100)}%</div>
+                    </div>
+                    <div className="rec-metric">
+                      <div className="k">Envelope modulation</div>
+                      <div className="v">
+                        {Math.round(dsp.modulationHz ?? 0)} Hz · {Math.round((dsp.modulationDepth ?? 0) * 100)}%
+                      </div>
+                    </div>
+                    <div className="rec-metric">
+                      <div className="k">Transients</div>
+                      <div className="v">{dsp.transientCount ?? 0}</div>
+                    </div>
+                    <div className="rec-metric">
+                      <div className="k">Spectral centroid</div>
+                      <div className="v">{Math.round(dsp.spectralCentroid ?? 0)} Hz</div>
+                    </div>
+                  </div>
+                  <p className="tiny muted" style={{ marginTop: 6 }}>
+                    Measured from the clip itself. These describe the sound, not the threat.
+                  </p>
+                </div>
+              ) : null}
 
               <div className="divider" />
               <dl className="kv">

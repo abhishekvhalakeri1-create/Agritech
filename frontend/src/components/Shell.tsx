@@ -7,6 +7,7 @@ import {
   Menu,
   Microscope,
   Radio,
+  Scale,
   ScanEye,
   ShieldAlert,
   Sprout,
@@ -23,6 +24,7 @@ const NAV = [
   { to: '/fields', label: 'Fields', icon: Leaf },
   { to: '/warnings', label: 'Warnings', icon: ShieldAlert },
   { to: '/observations', label: 'Observations', icon: ScanEye },
+  { to: '/evidence', label: 'Evidence', icon: Scale },
   { to: '/acoustic', label: 'Acoustic', icon: Radio },
   { to: '/plant', label: 'Plant', icon: Microscope },
   { to: '/soil', label: 'Soil', icon: CloudRain },
@@ -94,7 +96,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           </nav>
 
           <div className="nav-right">
-            <Link to="/observations?filter=debt" className="nav-debt" title="Open the Evidence Debt breakdown">
+            <Link to="/evidence" className="nav-debt" title="Open the Evidence Debt ledger">
               <span
                 className="nav-debt-ring"
                 style={{ background: TONE_HEX[tone] ?? TONE_HEX.sage }}

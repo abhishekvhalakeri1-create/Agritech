@@ -8,6 +8,7 @@ import Overview from './pages/Overview'
 import Fields from './pages/Fields'
 import Warnings from './pages/Warnings'
 import Observations from './pages/Observations'
+import Evidence from './pages/Evidence'
 import Acoustic from './pages/Acoustic'
 import Plant from './pages/Plant'
 import Soil from './pages/Soil'
@@ -76,6 +77,7 @@ export default function App() {
           <Route path="/fields" element={<Fields />} />
           <Route path="/warnings" element={<Warnings />} />
           <Route path="/observations" element={<Observations />} />
+          <Route path="/evidence" element={<Evidence />} />
           <Route path="/acoustic" element={<Acoustic />} />
           <Route path="/plant" element={<Plant />} />
           <Route path="/soil" element={<Soil />} />
