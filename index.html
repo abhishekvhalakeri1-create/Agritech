@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#12091c" />
+    <meta name="description" content="A little universe of light, love, and Diwali magic — made especially for Nandita." />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23180d22'/%3E%3Cpath d='M32 8c8 12 9 19 0 25-9-6-8-13 0-25Z' fill='%23ffd58a'/%3E%3Cpath d='M13 36c5 19 33 19 38 0-12 5-26 5-38 0Z' fill='%23d77b45'/%3E%3C/svg%3E" />
+    <title>Happy Diwali, Nandita ✨</title>
+  </head>
+  <body>
+    <div class="page-glow" aria-hidden="true"></div>
+    <div class="stars" id="stars" aria-hidden="true"></div>
+    <canvas id="fireworks" aria-hidden="true"></canvas>
+
+    <div class="experience">
+      <header class="topbar reveal reveal-1">
+        <div class="keepsake">
+          <span class="keepsake-mark" aria-hidden="true">
+            <svg viewBox="0 0 32 32" fill="none">
+              <path d="M16 2.5 18.8 13 29.5 16 18.8 19 16 29.5 13.2 19 2.5 16 13.2 13 16 2.5Z" fill="currentColor"/>
+              <circle cx="16" cy="16" r="3.2" fill="#1a0d24"/>
+            </svg>
+          </span>
+          <span>A little universe of light</span>
+        </div>
+
+        <button class="sound-toggle" id="sound-toggle" type="button" aria-label="Turn on gentle music" aria-pressed="false">
+          <span class="sound-bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+          <span id="sound-label">Sound off</span>
+        </button>
+      </header>
+
+      <main class="hero">
+        <section class="love-copy" aria-labelledby="diwali-title">
+          <div class="eyebrow reveal reveal-2"><span></span> FOR THE LIGHT OF MY LIFE</div>
+
+          <h1 id="diwali-title" class="title">
+            <span class="title-line reveal reveal-3">Happy Diwali,</span>
+            <span class="name-wrap reveal reveal-4">
+              <span class="name">Nandita</span>
+              <svg class="name-spark spark-one" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 0c1.4 10.7 5.3 14.6 16 16-10.7 1.4-14.6 5.3-16 16C14.6 21.3 10.7 17.4 0 16 10.7 14.6 14.6 10.7 16 0Z" fill="currentColor"/></svg>
+              <svg class="name-spark spark-two" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 0c1.4 10.7 5.3 14.6 16 16-10.7 1.4-14.6 5.3-16 16C14.6 21.3 10.7 17.4 0 16 10.7 14.6 14.6 10.7 16 0Z" fill="currentColor"/></svg>
+            </span>
+          </h1>
+
+          <p class="lead reveal reveal-5">In a sky full of lights,<br />you’ll always be <em>my favorite.</em></p>
+          <p class="wish-copy reveal reveal-6">May this Diwali bring you soft moments, bright dreams, and a thousand reasons to keep that beautiful smile glowing.</p>
+
+          <div class="actions reveal reveal-7">
+            <button class="wish-button" id="wish-button" type="button">
+              <span class="button-shine" aria-hidden="true"></span>
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2.5 14.1 9 21 11.2 14.1 13.4 12 20 9.9 13.4 3 11.2 9.9 9 12 2.5Z" fill="currentColor"/><path d="m19 2 .7 2.3L22 5l-2.3.7L19 8l-.7-2.3L16 5l2.3-.7L19 2Z" fill="currentColor"/></svg>
+              <span id="wish-button-label">Make a wish, my love</span>
+              <span class="button-heart" aria-hidden="true">♡</span>
+            </button>
+            <span class="button-note">A little magic is waiting for you</span>
+          </div>
+
+          <div class="signature reveal reveal-8">
+            <span class="signature-line"></span>
+            <span>With all my heart, today &amp; always</span>
+            <span class="tiny-heart">♥</span>
+          </div>
+        </section>
+
+        <section class="diya-scene reveal reveal-scene" aria-label="A glowing golden diya surrounded by an ornate rangoli and floating lanterns">
+          <div class="scene-aura" aria-hidden="true"></div>
+          <div class="orbit orbit-outer" aria-hidden="true"><i></i><i></i><i></i></div>
+          <div class="orbit orbit-inner" aria-hidden="true"></div>
+
+          <svg class="mandala" viewBox="0 0 600 600" fill="none" aria-hidden="true">
+            <defs>
+              <path id="petal" d="M300 40C315 66 315 86 300 108C285 86 285 66 300 40Z" />
+              <path id="small-petal" d="M300 86C309 102 309 116 300 132C291 116 291 102 300 86Z" />
+            </defs>
+            <circle cx="300" cy="300" r="254" stroke="currentColor" stroke-width=".7" stroke-dasharray="1 10" />
+            <circle cx="300" cy="300" r="230" stroke="currentColor" stroke-width=".6" />
+            <circle cx="300" cy="300" r="217" stroke="currentColor" stroke-width=".7" stroke-dasharray="3 7" />
+            <g class="mandala-petals" stroke="currentColor" stroke-width=".9">
+              <use href="#petal"/><use href="#petal" transform="rotate(15 300 300)"/><use href="#petal" transform="rotate(30 300 300)"/><use href="#petal" transform="rotate(45 300 300)"/><use href="#petal" transform="rotate(60 300 300)"/><use href="#petal" transform="rotate(75 300 300)"/><use href="#petal" transform="rotate(90 300 300)"/><use href="#petal" transform="rotate(105 300 300)"/><use href="#petal" transform="rotate(120 300 300)"/><use href="#petal" transform="rotate(135 300 300)"/><use href="#petal" transform="rotate(150 300 300)"/><use href="#petal" transform="rotate(165 300 300)"/><use href="#petal" transform="rotate(180 300 300)"/><use href="#petal" transform="rotate(195 300 300)"/><use href="#petal" transform="rotate(210 300 300)"/><use href="#petal" transform="rotate(225 300 300)"/><use href="#petal" transform="rotate(240 300 300)"/><use href="#petal" transform="rotate(255 300 300)"/><use href="#petal" transform="rotate(270 300 300)"/><use href="#petal" transform="rotate(285 300 300)"/><use href="#petal" transform="rotate(300 300 300)"/><use href="#petal" transform="rotate(315 300 300)"/><use href="#petal" transform="rotate(330 300 300)"/><use href="#petal" transform="rotate(345 300 300)"/>
+            </g>
+            <g class="mandala-small-petals" stroke="currentColor" stroke-width=".7">
+              <use href="#small-petal" transform="rotate(7.5 300 300)"/><use href="#small-petal" transform="rotate(22.5 300 300)"/><use href="#small-petal" transform="rotate(37.5 300 300)"/><use href="#small-petal" transform="rotate(52.5 300 300)"/><use href="#small-petal" transform="rotate(67.5 300 300)"/><use href="#small-petal" transform="rotate(82.5 300 300)"/><use href="#small-petal" transform="rotate(97.5 300 300)"/><use href="#small-petal" transform="rotate(112.5 300 300)"/><use href="#small-petal" transform="rotate(127.5 300 300)"/><use href="#small-petal" transform="rotate(142.5 300 300)"/><use href="#small-petal" transform="rotate(157.5 300 300)"/><use href="#small-petal" transform="rotate(172.5 300 300)"/><use href="#small-petal" transform="rotate(187.5 300 300)"/><use href="#small-petal" transform="rotate(202.5 300 300)"/><use href="#small-petal" transform="rotate(217.5 300 300)"/><use href="#small-petal" transform="rotate(232.5 300 300)"/><use href="#small-petal" transform="rotate(247.5 300 300)"/><use href="#small-petal" transform="rotate(262.5 300 300)"/><use href="#small-petal" transform="rotate(277.5 300 300)"/><use href="#small-petal" transform="rotate(292.5 300 300)"/><use href="#small-petal" transform="rotate(307.5 300 300)"/><use href="#small-petal" transform="rotate(322.5 300 300)"/><use href="#small-petal" transform="rotate(337.5 300 300)"/><use href="#small-petal" transform="rotate(352.5 300 300)"/>
+            </g>
+          </svg>
+
+          <div class="arch" aria-hidden="true">
+            <div class="arch-inner"></div>
+            <span class="arch-star">✦</span>
+          </div>
+
+          <div class="hanging-lantern lantern-left" aria-hidden="true">
+            <span class="lantern-string"></span>
+            <span class="lantern-top"></span>
+            <span class="lantern-body"><i></i><i></i><i></i></span>
+            <span class="lantern-tail"></span>
+          </div>
+          <div class="hanging-lantern lantern-right" aria-hidden="true">
+            <span class="lantern-string"></span>
+            <span class="lantern-top"></span>
+            <span class="lantern-body"><i></i><i></i><i></i></span>
+            <span class="lantern-tail"></span>
+          </div>
+
+          <div class="scene-message" aria-hidden="true">
+            <span>You are my</span>
+            <strong>brightest light</strong>
+          </div>
+
+          <div class="diya-wrap" aria-hidden="true">
+            <div class="flame-glow"></div>
+            <div class="flame">
+              <span class="flame-outer"></span>
+              <span class="flame-inner"></span>
+            </div>
+            <span class="diya-spark ds-1">✦</span><span class="diya-spark ds-2">✧</span><span class="diya-spark ds-3">✦</span><span class="diya-spark ds-4">·</span>
+            <svg class="diya" viewBox="0 0 520 290" fill="none">
+              <defs>
+                <linearGradient id="bowl" x1="260" y1="112" x2="260" y2="272" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#FFCE77"/><stop offset=".16" stop-color="#C8733D"/><stop offset=".45" stop-color="#87364A"/><stop offset=".78" stop-color="#441B36"/><stop offset="1" stop-color="#2A1229"/>
+                </linearGradient>
+                <linearGradient id="rim" x1="82" y1="115" x2="438" y2="152" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#9B4E40"/><stop offset=".25" stop-color="#FFDA8E"/><stop offset=".5" stop-color="#B66442"/><stop offset=".77" stop-color="#FFE5A5"/><stop offset="1" stop-color="#7F3C39"/>
+                </linearGradient>
+                <radialGradient id="oil" cx="0" cy="0" r="1" gradientTransform="translate(260 131) rotate(90) scale(24 166)" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#FFD778"/><stop offset=".45" stop-color="#8D493C"/><stop offset="1" stop-color="#3A2030"/>
+                </radialGradient>
+                <linearGradient id="base" x1="260" y1="236" x2="260" y2="276" gradientUnits="userSpaceOnUse"><stop stop-color="#AE6149"/><stop offset="1" stop-color="#3A1A2E"/></linearGradient>
+                <filter id="soft-shadow" x="30" y="80" width="460" height="220" filterUnits="userSpaceOnUse"><feGaussianBlur stdDeviation="10"/></filter>
+              </defs>
+              <ellipse cx="260" cy="259" rx="182" ry="20" fill="#050208" fill-opacity=".6" filter="url(#soft-shadow)"/>
+              <path d="M160 246C182 265 338 265 360 246L347 267C313 284 207 284 173 267L160 246Z" fill="url(#base)" stroke="#C47A52" stroke-width="1.2"/>
+              <path d="M80 125C91 184 127 230 184 250C232 267 288 267 336 250C393 230 429 184 440 125H80Z" fill="url(#bowl)" stroke="#E5A260" stroke-width="1.6"/>
+              <path d="M98 153C135 177 385 177 422 153" stroke="#F4B867" stroke-opacity=".55" stroke-width="2"/>
+              <path d="M113 183C164 213 356 213 407 183" stroke="#F4B867" stroke-opacity=".28" stroke-width="1.5"/>
+              <path d="M139 213C192 238 328 238 381 213" stroke="#F4B867" stroke-opacity=".22"/>
+              <ellipse cx="260" cy="126" rx="181" ry="37" fill="url(#rim)"/>
+              <ellipse cx="260" cy="126" rx="165" ry="26" fill="url(#oil)" stroke="#FFCE78" stroke-opacity=".65" stroke-width="1.2"/>
+              <path d="M259 129C267 113 269 102 265 87" stroke="#301822" stroke-width="7" stroke-linecap="round"/>
+              <path d="M259 127C264 115 265 106 263 99" stroke="#EAC17A" stroke-width="2" stroke-linecap="round"/>
+              <g stroke="#FFD487" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M177 169c11-18 25-18 36 0-11 20-25 20-36 0Z"/><path d="M307 169c11-18 25-18 36 0-11 20-25 20-36 0Z"/>
+                <path d="M230 190c8-23 18-32 30-42 12 10 22 19 30 42-8 17-18 25-30 31-12-6-22-14-30-31Z"/>
+                <path d="M260 157v52M242 181l18 15 18-15"/>
+                <path d="M149 163c-8 10-8 20 0 30M371 163c8 10 8 20 0 30" stroke-opacity=".65"/>
+              </g>
+              <g fill="#FFE0A0"><circle cx="195" cy="169" r="3"/><circle cx="325" cy="169" r="3"/><circle cx="260" cy="174" r="3"/><circle cx="126" cy="158" r="2.2"/><circle cx="394" cy="158" r="2.2"/></g>
+              <path d="M99 119C154 88 366 88 421 119" stroke="#FFF0BC" stroke-opacity=".65" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <div class="rangoli-base">
+              <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+            </div>
+          </div>
+
+          <div class="floating-light fl-1" aria-hidden="true"></div><div class="floating-light fl-2" aria-hidden="true"></div><div class="floating-light fl-3" aria-hidden="true"></div><div class="floating-light fl-4" aria-hidden="true"></div><div class="floating-light fl-5" aria-hidden="true"></div>
+        </section>
+      </main>
+
+      <footer class="footer reveal reveal-8">
+        <span>शुभ दीपावली</span>
+        <i></i>
+        <span>May our love shine brighter every year</span>
+        <i></i>
+        <span>Made only for Nandita <b>♡</b></span>
+      </footer>
+    </div>
+
+    <div class="wish-modal" id="wish-modal" role="dialog" aria-modal="true" aria-labelledby="wish-title" aria-hidden="true">
+      <div class="modal-backdrop"></div>
+      <div class="wish-card">
+        <button class="modal-close" id="modal-close" type="button" aria-label="Close your Diwali wish">×</button>
+        <div class="card-ornament" aria-hidden="true">✦</div>
+        <p class="card-eyebrow">MY DIWALI WISH FOR YOU</p>
+        <h2 id="wish-title">May your life be as<br /><em>beautiful as you make mine.</em></h2>
+        <div class="card-divider"><span></span>♡<span></span></div>
+        <p class="card-message">Nandita, may your dreams find their wings, your smile never lose its sparkle, and may I be right beside you for every little celebration. You are my brightest light—today, tomorrow, always.</p>
+        <p class="card-signoff">Happy Diwali, my love.</p>
+        <button class="return-button" id="return-button" type="button">Back to our little sky <span>↗</span></button>
+      </div>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite">Your wish is on its way to the stars ✦</div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
